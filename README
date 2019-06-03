@@ -1,0 +1,54 @@
+Byte On Panel
+=============
+Coypright Mozbugbox <mozbugbox@yahoo.com.au> 2011-2013
+Released under GPL version 3 or later.
+
+Add simple network traffice monitor icons to the desktop panel/taskbar. The
+icons show bandwidth usage of all the network interfaces on a Linux system.
+
+Home: https://bitbucket.org/mozbugbox/byteonpanel/
+
+Usage
+=====
+
+Copy the "src/byteonpanel" file into your path and run it. It will check your
+network interfaces and pop some icons on your desktop panel/taskbar.
+
+Dependents
+==========
+Python version: gtk+-3.0, python-gobject, python-cairo
+
+Vala version: vala > 0.10.0, libcairo, gtk+-3.0
+
+Build
+=====
+Install the devel package for the dependents first.
+$ ./configure
+$ make
+$ make install
+
+Python Version
+==============
+The original code was written in Python. Later on, it's ported to vala language
+for smaller footprint.
+
+The python version is in the file dist/byteonpanel.py, while the vala version
+is in dist/src/*.vala.
+
+LXDE Autostart
+==============
+
+* Copy the "byteonpanel.desktop" file to $HOME/.config/autostart/.
+
+* Then open LXDE->Preferences->Desktop Session Settings->Automatically Started
+  Applications->ByteOnPanel.
+
+* Check the box. 
+
+* Finally logout and login.
+
+Vola! We have icewm like network activity monitors!
+
+Known Issues
+============
+
