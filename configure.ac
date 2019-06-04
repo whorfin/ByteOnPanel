@@ -1,4 +1,4 @@
-AC_INIT([Byte On Panel], [0.2.0], [mozbugbox@yahoo.com.au], [byteonpanel], [https://bitbucket.org/mozbugbox/byteonpanel/])
+AC_INIT([Byte On Panel], [0.3.0], [mozbugbox@yahoo.com.au], [byteonpanel], [https://bitbucket.org/mozbugbox/byteonpanel/])
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_HEADERS(config.h)
 AM_INIT_AUTOMAKE([dist-bzip2])
@@ -6,7 +6,7 @@ AM_MAINTAINER_MODE
 
 AM_CONDITIONAL([IS_HG_REPO], [test -d "$srcdir/.hg"])
 
-AM_PROG_VALAC([0.10.0])
+AM_PROG_VALAC([0.42.0])
 
 AC_PROG_CC
 AM_PROG_CC_C_O

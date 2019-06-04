@@ -20,7 +20,7 @@
 using Gtk;
 
 const double fdelta = 1E-9;
-const uint MAX_SLOT = 30;
+const uint MAX_SLOT = 48;
 const int MIN_STATUS_ICON_SIZE = 16;
 const string SYS_NET_PATH = "/sys/class/net";
 
@@ -148,25 +148,43 @@ public class StatusIconIF: GLib.Object {
     private double scale = -1.0;
     private Gtk.StatusIcon statusicon;
     private Gtk.Menu menu;
-    private uint update_id;
-    private uint update_scale_id;
+    private uint update_id = -1;
+    private uint update_scale_id = -1;
     private int margin = 1;
 
     public IFace iface;
-    public float[] rx_color = { 0.0f, 1.0f, 0.0f };
-    public float[] tx_color = { 1.0f, 1.0f, 0.0f };
+
     public float portion = 0.8f; // rate height against icon height
     public float portion_low = 0.3f;
     public float rate_low = 1024.0f;
     public uint update_timeout = 1000;
     public uint update_scale_timeout;
 
+    // Color code to differentiate speed: 1B/s, 1KB/s, 1MB/s
+    private uint[] color_step = {0x0, 0x400, 0x2800, 0x100000, 0x990000};
+    private string[] rx_color_strings = {
+        "#0ea5fd", "#03fc83", "#c1fa07", "#f908fa", "#fc0527"};
+    private string[] tx_color_strings = {
+        "#057cc0", "#05c065", "#99bf1c", "#af03b0", "#c43b4e"};
+    private Gdk.RGBA[] rx_colors = {};
+    private Gdk.RGBA[] tx_colors = {};
 
     public StatusIconIF(Application app_obj, IFace iface_obj) {
         app = app_obj;
         iface = iface_obj;
-        update_scale_timeout = MAX_SLOT * update_timeout;
+
+        // Fill rx_colors/tx_colors.
+        for(var i = 0; i < color_step.length; i++) {
+            var color = Gdk.RGBA();
+            color.parse(rx_color_strings[i]);
+            rx_colors += color;
+            color = Gdk.RGBA();
+            color.parse(tx_color_strings[i]);
+            tx_colors += color;
+        }
+
         setup_icon();
+        update_scale_timeout = iface.maxlen * update_timeout;
     }
 
     private void setup_icon() {
@@ -175,23 +193,30 @@ public class StatusIconIF: GLib.Object {
         statusicon.set_title(Config.PACKAGE_NAME);
         statusicon.size_changed.connect(on_status_icon_size_changed);
         setup_menu();
-        if (statusicon.is_embedded()) {
-            var size = statusicon.get_size();
-            var hsize = size;
-            if (size >= MIN_STATUS_ICON_SIZE)
-                hsize = size - margin * 2;
-            surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, size, hsize);
-            ctx = new Cairo.Context(surface);
-        }
+        on_status_icon_size_changed(statusicon, statusicon.get_size());
     }
 
     private bool on_status_icon_size_changed(StatusIcon sicon, int size) {
-        if (statusicon.is_embedded()) {
-            var hsize = size;
-            if (size >= MIN_STATUS_ICON_SIZE)
-                hsize = size - margin * 2;
-            surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, size, hsize);
-            ctx = new Cairo.Context(surface);
+        if (!sicon.is_embedded()) {
+            return false;
+        }
+
+        var hsize = size;
+        if (size >= MIN_STATUS_ICON_SIZE)
+            hsize = size - margin * 2;
+        surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, size, hsize);
+        ctx = new Cairo.Context(surface);
+
+        // try to keep each slot at least 1 pixel width
+        if (size < iface.maxlen) {
+            iface.maxlen = size;
+            update_scale_timeout = iface.maxlen * update_timeout;
+            if (update_scale_id > 0) {
+                Source.remove(update_scale_id);
+                update_scale_id = -1;
+            }
+            update_scale_id = Timeout.add(update_scale_timeout,
+                                update_scale);
         }
         return true;
     }
@@ -331,6 +356,18 @@ In/Out(average): %s/%s""".printf(iface.iface_id, rx_now, tx_now,
         return ret;
     }
 
+    // Find speed color index for rx_color/tx_color of the given speed
+    private int color_index_by_speed(double current_speed) {
+        var speed_color_id = 0;
+        for(var i = color_step.length - 1; i > 0; i--) {
+            if (current_speed >= color_step[i]) {
+                speed_color_id = i;
+                break;
+            } 
+        }
+        return speed_color_id;
+    }
+
     public bool update() {
         if (ctx == null) return true;
 
@@ -349,27 +386,32 @@ In/Out(average): %s/%s""".printf(iface.iface_id, rx_now, tx_now,
 
         ctx.paint();
         ctx.save();
-        ctx.set_source_rgb(rx_color[0], rx_color[1], rx_color[2]);
-        ctx.new_path();
+
+        int color_id; 
+        Gdk.RGBA color;
         for(var i = 0; i < rx_list.length; i++) {
             var speed = rx_list[i];
+            color_id = color_index_by_speed(speed/scale);
+            color = rx_colors[color_id];
+            ctx.set_source_rgb(color.red, color.green, color.blue);
             // (top, left) = (0, 0); x, y = topleft -> southeast
             ctx.rectangle(slow_width*(i+xoffset),
                 graph_height - speed, slow_width, speed);
+            ctx.fill();
         }
-        ctx.fill();
 
-        ctx.set_source_rgb(tx_color[0], tx_color[1], tx_color[2]);
-        ctx.new_path();
         for(var i = 0; i < tx_list.length; i++) {
             var speed = tx_list[i];
+            color_id = color_index_by_speed(speed/scale);
+            color = tx_colors[color_id];
+            ctx.set_source_rgb(color.red, color.green, color.blue);
             // (top, left) = (0, 0); x, y = topleft -> southeast
             ctx.rectangle(slow_width*(i+xoffset),
                 0, slow_width, speed);
+            ctx.fill();
         }
-        ctx.fill();
         ctx.restore();
-        Gdk.Pixbuf pixbuf = GdkOverrides.pixbuf_get_from_surface(surface, 0, 0,
+        Gdk.Pixbuf pixbuf = Gdk.pixbuf_get_from_surface(surface, 0, 0,
                         graph_width, graph_height);
         statusicon.set_from_pixbuf(pixbuf);
         // keep timeout going by return true.
@@ -381,6 +423,7 @@ In/Out(average): %s/%s""".printf(iface.iface_id, rx_now, tx_now,
         update_scale_id = Timeout.add(update_scale_timeout,
                             update_scale);
     }
+
     public void on_quit(Gtk.Action act) {
         app.quit();
     }
@@ -400,7 +443,7 @@ public class Application: GLib.Object {
             (a, b) => {
                 return strcmp(a, b);
             },
-            g_free, g_object_unref);
+            g_free, unref);
 
     }
     private bool update_iface() {
@@ -459,7 +502,7 @@ public class Application: GLib.Object {
         ad.set_license_type(Gtk.License.GPL_3_0);
         ad.set_website(Config.PACKAGE_URL);
         ad.set_website_label("Byte On Panel Wiki");
-        string[] authors = { "Mozbugbox" }; // cannot make const string[]?
+        const string[] authors = { "Mozbugbox" }; // cannot make const string[]?
         ad.set_authors(authors);
         ad.present();
     }
