@@ -38,9 +38,16 @@ public struct ByteStat {
 
 string humanize_number(double num,
                        float step=1024.0f,
+#if BITS_NOT_BYTES
+                       string unit_string="bps") {
+#else
                        string unit_string="B") {
+#endif
     string[] ends = {"", "K","M","G","T","P","E","Z","Y"};
     string the_end = ends[ends.length-1];
+#if BITS_NOT_BYTES
+    num *= 8;
+#endif
     foreach(var i in ends) {
         if (num < step) {
             the_end = i;
@@ -502,7 +509,7 @@ public class Application: GLib.Object {
         ad.set_license_type(Gtk.License.GPL_3_0);
         ad.set_website(Config.PACKAGE_URL);
         ad.set_website_label("Byte On Panel Wiki");
-        const string[] authors = { "Mozbugbox" }; // cannot make const string[]?
+        const string[] authors = { "Mozbugbox","","","","bits per second support added by whorfin" };
         ad.set_authors(authors);
         ad.present();
     }

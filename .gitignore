@@ -1,0 +1,15 @@
+Makefile
+Makefile.in
+aclocal.m4
+autom4te.cache
+configure
+config.h
+config.log
+config.status
+POTFILES
+stamp-it
+.deps
+byteonpanel
+*.o
+stamp-h1
+libtool

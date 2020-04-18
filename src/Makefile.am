@@ -23,6 +23,7 @@ byteonpanel_VALAFLAGS = \
 				--pkg bop-overrides \
 				--pkg config \
 				--pkg gtk+-3.0 \
+				-D BITS_NOT_BYTES \
 				$(NULL)
 
 byteonpanel_LDADD = \

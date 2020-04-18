@@ -49,6 +49,15 @@ LXDE Autostart
 
 Vola! We have icewm like network activity monitors!
 
+
+whorfin tweaks
+============
+I prefer "bps" (bits per second) instead of "B" (bytes per second)
+If you do not:
+* remove -D BITS_NOT_BYTES from byteonpanel_VALAFLAGS in src/Makefile.am
+$ make clean
+$ autoreconf
+$ ./configure
+
 Known Issues
 ============
-
