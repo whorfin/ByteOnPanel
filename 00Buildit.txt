@@ -18,9 +18,3 @@ $ make install
 # and hacked for Mbps insteadof MB
 # valac needed; src/byteonpanel.vala generates src/byteonpanel.c
 #       valac said to be too old, but still worked
-
-# whorfin added bps instead of B [bytes per sec]
-#       add -D BITS_NOT_BYTES [currently done] to byteonpanel_VALAFLAGS in
-#       src/Makefile.am
-autoreconf
-./configure

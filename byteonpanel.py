@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # vim:fileencoding=utf-8:sw=4:et
 """
     Byte On Panel: Display bandwidth usage on desktop panel.
@@ -61,7 +61,7 @@ class IFace:
         if os.path.exists(ifpath):
             self.ifpath = ifpath
         else:
-            raise AttributeError, ifpath
+            raise AttributeError(ifpath)
         self.rx_path = os.path.join(ifpath, "statistics", "rx_bytes")
         self.tx_path = os.path.join(ifpath, "statistics", "tx_bytes")
         self.rx_queue = SizedList(maxlen=self.maxlen)
@@ -300,7 +300,7 @@ class App:
                     self.iface_map[f] = StatusBarIF(self, iface)
                     self.iface_map[f].start_timers()
         # update status
-        for fid, face in self.iface_map.items():
+        for fid, face in list(self.iface_map.items()):
             if not face.iface.isup():
                 face.destroy()
                 del self.iface_map[fid]
