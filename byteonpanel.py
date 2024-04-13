@@ -189,7 +189,10 @@ In/Out(average): {3}/{4}""".format(
         """Set the scale factor for speed rate so that the speed fit into icon
         height."""
         surface = self.ctx.get_target()
+        #   whorfin - this gets set as 0 and we die
         height = surface.get_height()
+        # hax
+        height = 64
 
         portion = self.portion
         iface = self.iface
@@ -204,7 +207,8 @@ In/Out(average): {3}/{4}""".format(
                     (abs(self.scale - scale)/self.scale > 0.3) or
                     (height < self.scale*total)):
                 self.scale = scale
-                #print "***Scale", scale, total, max_rx[2], max_tx[2]
+                #print("***Scale", scale, total, max_rx[2], max_tx[2])
+                print("***update_scale - self.scale: {}, height: {}, total: {}, portion: {}".format(self.scale, height, total, portion))
         return True
 
     def get_speed(self, maxspeed):
@@ -213,6 +217,7 @@ In/Out(average): {3}/{4}""".format(
         tx_list = []
         iface = self.iface
 
+        print("***get_speed - self.scale: {}, maxspeed: {}".format(self.scale, maxspeed))
         if self.scale == 0:
             self.update_scale()
         scale = self.scale
@@ -221,7 +226,7 @@ In/Out(average): {3}/{4}""".format(
         for i in range(len(iface.rx_queue)):
             rspeed = iface.rx_queue[i][2]*scale
             tspeed = iface.tx_queue[i][2]*scale
-            if rspeed + tspeed >= maxspeed:
+            if (rspeed + tspeed) > maxspeed:
                 self.update_scale()
                 rx_list, tx_list = self.get_speed(maxspeed)
                 return rx_list, tx_list
@@ -242,6 +247,8 @@ In/Out(average): {3}/{4}""".format(
         graph_width = surface.get_width()
         graph_height = surface.get_height()
 
+        # whorfin - and again here it is 0
+        graph_height = 64
         rx_list, tx_list = self.get_speed(graph_height)
 
         slot_width = float(graph_width)/iface.maxlen
